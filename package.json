@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@koa/router": "^10.1.1",
+    "gray-matter": "^4.0.3",
+    "koa": "^2.13.4",
+    "koa-bodyparser": "^4.3.0",
+    "lifegpc-md5": "^1.0.2",
+    "log4js": "^6.9.1",
+    "markdown-it": "^14.1.0"
+  }
+}
