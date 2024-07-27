@@ -28,7 +28,7 @@ Router.get('/page','/:lang/:index',async (ctx)=>{
             msg:'Not Found'
         }
     }
-    return respondHandel.success(ctx,articles,'ok')
+    return respondHandel.success(ctx,Array.from(articles.values()),'ok')
 })
 
 module.exports = Router

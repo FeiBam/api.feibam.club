@@ -177,6 +177,7 @@ class ArticleJSON extends ArticleModel {
     static load(path) {
         const json = fs.readFileSync(path, 'utf8');
         const article = new ArticleJSON();
+        console.log(json)
         article.deformat(json);
         return article;
     }
@@ -203,9 +204,7 @@ class ArticlesControl {
     }
 
     #onLang(lang) {
-        this.#private_articles_tree[lang] = {
-            index: 0
-        };
+        this.#private_articles_tree[lang] = new Map()
     }
 
     async #readArticle(lang, ArticleFileName) {
@@ -216,8 +215,7 @@ class ArticlesControl {
     async #Update_Tree(Lang, Article) {
         const ArticleCreateDate = Article.get_ArticleCreateDate();
         Article.createDate = ArticleCreateDate;
-        this.#private_articles_tree[Lang].index += 1;
-        this.#private_articles_tree[Lang][Article.getID()] = Article;
+        this.#private_articles_tree[Lang].set(Article.getID() , Article)
         return this;
     }
 
@@ -248,12 +246,14 @@ class ArticlesControl {
         const Article = await this.#readArticle(Lang, ArticleId);
         this.#onLang(Lang);
         await this.#Update_Tree(Lang, Article);
-        return this.#private_articles_tree[Lang][ArticleId];
+        return this.#private_articles_tree[Lang].get(ArticleId);
     }
 
     async getArticlesByLang(Lang) {
         this.#onLang(Lang);
+        console.log(this.#private_articles_tree)
         const dirList = fs.readdirSync(`${this.#Articles_Path}/${Lang}`);
+        console.log(dirList)
         for (let ArticleFileName of dirList) {
             const Article = await this.#readArticle(Lang, ArticleFileName);
             await this.#Update_Tree(Lang, Article);
@@ -270,21 +270,22 @@ class ArticlesControl {
         if (!this.hasLang(lang)) {
             this.newLang(lang);
         }
-        const ArticleID = this.#private_articles_tree[lang].index;
-        if (args.length === 1 && args[0] instanceof this.#Article_Class) {
+        const ArticleID = this.#private_articles_tree[lang].size;
+        if (args.size === 1 && args[0] instanceof this.#Article_Class) {
             await this.#Update_Tree(lang, ArticleID, args[0]);
+            return args[0]
         } else {
-            const Article = new this.#Article_Class(...args);
+            const article = new this.#Article_Class(...args);
             await this.#Update_Tree(lang, ArticleID, Article);
+            return article
         }
-        return this;
     }
 
     async getAllArticleNum() {
         await this.getAll();
         let ArticleNum = 0;
         for (let lang of Object.keys(this.#private_articles_tree)) {
-            ArticleNum += this.#private_articles_tree[lang].index;
+            ArticleNum += this.#private_articles_tree[lang].size;
         }
         return ArticleNum;
     }
@@ -292,8 +293,38 @@ class ArticlesControl {
     async getArticleNumByLang(lang) {
         await this.getAll();
         if (!this.#private_articles_tree[lang]) return false;
-        return this.#private_articles_tree[lang].index;
+        return this.#private_articles_tree[lang].size;
     }
+
+    async getArticlesByTag(tag){
+        await this.getAll();
+        let filter = []
+
+        for (const [lang, articlesMap] of Object.entries(this.#private_articles_tree)) {
+            for (const article of articlesMap.values()) {
+                if (article.Tags.includes(tag)) {
+                    filter.push(article);
+                }
+            }
+        }
+        return filter
+    }
+
+    async getArticlesByTagWithLang(tag,lang) {
+        await this.getAll();
+        let filter = [];
+
+        if (this.#private_articles_tree.hasOwnProperty(lang)) {
+            const articlesMap = this.#private_articles_tree[lang];
+            for (const article of articlesMap.values()) {
+                if (article.Tags.includes(tag)) {
+                    filter.push(article);
+                }
+            }
+        }
+        return filter;
+    }
+
 
     hasLang(lang) {
         return Object.keys(this.#private_articles_tree).includes(lang);

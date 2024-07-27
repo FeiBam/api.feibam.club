@@ -8,6 +8,8 @@ const { ArticleModel, ArticleMD ,ArticlesControl} = require("./unity/Article.js"
 
 const { Router } = require('./routes/main.js')
 
+const Port = process.env.NODE_ENV !== 'development' ? `8000` : '80';
+
 const app  = new Koa()
 
 let config = getConfig()
@@ -50,5 +52,5 @@ app.use(KoaBody())
 app.use(Router.allowedMethods())
 app.use(Router.routes())
 
-app.listen('80')
+app.listen(Port)
 
