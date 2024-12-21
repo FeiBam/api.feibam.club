@@ -8,6 +8,7 @@ import (
 	"api-feibam-club/routes"
 	"api-feibam-club/utils"
 	"fmt"
+	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -51,7 +52,10 @@ func runServer() func(cmd *cobra.Command, args []string) {
 			MaxAge:           0,     // 缓存时间
 		}))
 
-		defalut_route := r.Group("/")
+		defalut_route := r.Group("")
+		defalut_route.Any("/teapot", func(ctx *gin.Context) {
+			ctx.Redirect(http.StatusTemporaryRedirect, "https://www.google.com/teapot")
+		})
 
 		utils.RegisterRoutes("/article", defalut_route, routes.ArticleRoutes)
 

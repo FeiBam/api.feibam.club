@@ -2,10 +2,13 @@ package utils
 
 import (
 	"api-feibam-club/models"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 	"gorm.io/gorm"
 )
 
@@ -61,4 +64,39 @@ func ToArticleDTO(article models.Article) models.ArticleDTO {
 		Tags:         tags,
 		Links:        links,
 	}
+}
+
+func ParseArticleData(data []byte, format string) (*models.ArticleFrontMatter, error) {
+	var articleData models.ArticleFrontMatter
+
+	switch format {
+	case "yaml":
+		if err := yaml.Unmarshal(data, &articleData); err != nil {
+			return nil, fmt.Errorf("failed to parse YAML: %w", err)
+		}
+	case "json":
+		if err := json.Unmarshal(data, &articleData); err != nil {
+			return nil, fmt.Errorf("failed to parse JSON: %w", err)
+		}
+	default:
+		return nil, errors.New("unsupported format: must be 'yaml' or 'json'")
+	}
+
+	return &articleData, nil
+}
+
+func ConvertCreateArticleJSONBindToFrontMatter(bind *models.CreateArticleJSONBind) *models.ArticleFrontMatter {
+	return &models.ArticleFrontMatter{
+		ID:           bind.ID,
+		Title:        bind.Title,
+		Introduction: bind.Introduction,
+		Tags:         bind.Tags,
+		CreateAt:     bind.CreateAt,
+		Lang:         bind.Lang,
+		Links:        bind.Links,
+		Subject:      bind.Subject,
+	}
+}
+func RespondWithError(ctx *gin.Context, statusCode int, message string, details interface{}) {
+	ctx.JSON(statusCode, JsonResponse("err", statusCode, "", message, details))
 }

@@ -1,6 +1,7 @@
 package controls
 
 import (
+	"api-feibam-club/db/dao"
 	"api-feibam-club/models"
 	"api-feibam-club/utils"
 	"errors"
@@ -9,23 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
-
-type GetArticleByLangWithIdUrlBind struct {
-	Lang string `uri:"lang" binding:"required"`
-	Id   int    `uri:"id" binding:"required"`
-	Tag  string `form:"tag"`
-}
-
-type GetArticlesByFormBind struct {
-	Page int    `form:"page" binding:"required"`
-	Size int    `form:"size" binding:"required"`
-	Lang string `form:"lang" binding:"required"`
-	Tag  string `form:"tag"`
-}
-
-type GetArticleInfoTagByFormBind struct {
-	Lang string `form:"lang" binding:"required"`
-}
 
 func InfoOfArticles(ctx *gin.Context) {
 	var db *gorm.DB
@@ -36,7 +20,7 @@ func InfoOfArticles(ctx *gin.Context) {
 	var tags []models.Tag
 	var langCode models.ArticleLangCode
 
-	var queryParament GetArticleInfoTagByFormBind
+	var queryParament models.GetArticleInfoByFormBind
 	if err := ctx.ShouldBindQuery(&queryParament); err != nil {
 		ctx.JSON(400, gin.H{"msg": err.Error()})
 		return
@@ -168,7 +152,7 @@ func GetArticleByTagWithLang(ctx *gin.Context, size int, page int, lang_code mod
 
 func GetArticlesBy(ctx *gin.Context) {
 	var ok bool
-	var queryParament GetArticlesByFormBind
+	var queryParament models.GetArticlesByFormBind
 	if err := ctx.BindQuery(&queryParament); err != nil {
 		ctx.JSON(400, gin.H{"msg": err.Error()})
 		return
@@ -194,7 +178,7 @@ func GetArticleByLangWithId(ctx *gin.Context) {
 	var err error
 	var lang_code models.ArticleLangCode
 	var article models.Article
-	var queryParament GetArticleByLangWithIdUrlBind
+	var queryParament models.GetArticleByLangWithIdUrlBind
 
 	if err := ctx.ShouldBindUri(&queryParament); err != nil {
 		ctx.JSON(400, gin.H{"msg": err.Error()})
@@ -227,5 +211,67 @@ func GetArticleByLangWithId(ctx *gin.Context) {
 }
 
 func CreateArticle(ctx *gin.Context) {
+	var count int64
+	var db *gorm.DB
+	var err error
+	var queryParament models.CreateArticleJSONBind
 
+	// 解析请求体
+	if err := ctx.ShouldBindJSON(&queryParament); err != nil {
+		if err.Error() == "EOF" {
+			utils.RespondWithError(ctx, 400, "The articleData field is required!", nil)
+			return
+		}
+		utils.RespondWithError(ctx, 400, err.Error(), nil)
+		return
+	}
+
+	// 获取数据库连接
+	db, err = utils.GetDBFromContext(ctx)
+	if err != nil {
+		utils.RespondWithError(ctx, 500, "Failed to get database connection", nil)
+		return
+	}
+
+	// 获取当前文章计数
+	if err := db.Model(&models.Article{}).Count(&count).Error; err != nil {
+		utils.RespondWithError(ctx, 500, "Failed to count articles", nil)
+		return
+	}
+
+	// 转换为 FrontMatter
+	articleData := utils.ConvertCreateArticleJSONBindToFrontMatter(&queryParament)
+
+	// 校验 Article ID
+	expectedID := uint(count + 1)
+	if !validateArticleID(ctx, articleData.ID, expectedID) {
+		return
+	}
+	articleData.ID = int(expectedID)
+
+	// 创建文章
+	article, err := dao.CreateArticleModel(db, articleData)
+	if err != nil {
+		utils.RespondWithError(ctx, 400, "Failed to create article", err.Error())
+		return
+	}
+
+	// 插入文章记录
+	if err := dao.InsertArticleRecord(db, article); err != nil {
+		utils.RespondWithError(ctx, 500, "Failed to insert article record", err.Error())
+		return
+	}
+
+	// 转换为 DTO 并返回成功响应
+	articleDTO := utils.ToArticleDTO(*article)
+	ctx.JSON(200, utils.JsonResponse("ok", 200, "Success Create Article!", "", articleDTO))
+}
+
+func validateArticleID(ctx *gin.Context, articleID int, expectedID uint) bool {
+	if articleID != -1 && uint(articleID) != expectedID {
+		errMsg := fmt.Sprintf("Invalid Article ID! Expected %d but got %d", expectedID, articleID)
+		utils.RespondWithError(ctx, 400, errMsg, nil)
+		return false
+	}
+	return true
 }

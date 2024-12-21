@@ -86,17 +86,41 @@ type ArticleCountOfLang struct {
 	ArticleCount int64
 }
 
-type FrontMatter struct {
-	ID           int      `yaml:"id"`
-	Title        string   `yaml:"title"`
-	Introduction string   `yaml:"introduction"`
-	Tags         []string `yaml:"tags"`
-	CreateAt     string   `yaml:"create_at"`
-	Lang         string   `yaml:"lang"`
-	Links        []string `yaml:"links"`
+type ArticleFrontMatter struct {
+	ID           int      `yaml:"id" json:"id"`
+	Title        string   `yaml:"title" json:"title"`
+	Introduction string   `yaml:"introduction" json:"introduction"`
+	Tags         []string `yaml:"tags" json:"tags"`
+	CreateAt     string   `yaml:"createAt" json:"createAt"`
+	Lang         string   `yaml:"lang" json:"lang"`
+	Links        []string `yaml:"links" json:"links"`
+	Subject      string   `yaml:"subject" json:"subject"`
 }
 
-type ArticleMarkdownData struct {
-	MetaData FrontMatter
-	Subject  string
+type GetArticleByLangWithIdUrlBind struct {
+	Lang string `uri:"lang" binding:"required"`
+	Id   int    `uri:"id" binding:"required"`
+	Tag  string `form:"tag"`
+}
+
+type GetArticlesByFormBind struct {
+	Page int    `form:"page" binding:"required"`
+	Size int    `form:"size" binding:"required"`
+	Lang string `form:"lang" binding:"required"`
+	Tag  string `form:"tag"`
+}
+
+type GetArticleInfoByFormBind struct {
+	Lang string `form:"lang" binding:"required"`
+}
+
+type CreateArticleJSONBind struct {
+	ID           int      `json:"id" binding:"required"`
+	Title        string   `json:"title" binding:"required"`
+	Introduction string   `json:"introduction" binding:"required"`
+	Tags         []string `json:"tags" binding:"required"`
+	CreateAt     string   `json:"createAt" binding:"required"`
+	Lang         string   `json:"lang" binding:"required"`
+	Links        []string `json:"links" binding:"required"`
+	Subject      string   `json:"subject" binding:"required"`
 }

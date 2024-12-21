@@ -1,0 +1,155 @@
+openapi: '3.0.3'
+info:
+  title: feibam.club backend api
+  version: '1.0'
+servers:
+  - url: https://feibam.club/api/
+paths:
+  /article/{lang}/{id}:
+    get:
+      summary: 根据语言和文章 ID 获取文章
+      parameters:
+        - name: lang
+          in: path
+          description: 语言代码（例如：en, zh）
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          description: 文章 ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功获取文章
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleDTO'
+  /articles:
+    get:
+      summary: 根据分页信息获取文章列表
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          required: true
+          schema:
+            type: integer
+        - name: size
+          in: query
+          description: 每页条目数量
+          required: true
+          schema:
+            type: integer
+        - name: lang
+          in: query
+          description: 语言代码（例如：en, zh）
+          required: true
+          schema:
+            type: string
+        - name: tag
+          in: query
+          description: 文章标签
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功获取文章列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArticleDTO'
+  /article/info:
+    get:
+      summary: 获取文章统计信息
+      parameters:
+        - name: lang
+          in: query
+          description: 语言代码（例如：en, zh）
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功获取文章
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleInfoDTO'
+
+
+components:
+  schemas:
+    ArticleDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 文章 ID
+        title:
+          type: string
+          description: 文章标题
+        introduction:
+          type: string
+          description: 文章简介
+        createAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        subject:
+          type: string
+          description: 文章主题
+        lang:
+          type: integer
+          description: 语言代码
+        tags:
+          type: array
+          description: 文章标签列表
+          items:
+            $ref: '#/components/schemas/TagDTO'
+        links:
+          type: array
+          description: 文章相关链接
+          items:
+            $ref: '#/components/schemas/LinkDTO'
+    TagDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 标签 ID
+        name:
+          type: string
+          description: 标签名称
+    LinkDTO:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: 链接 URL
+    ArticleInfoDTO:
+      type: object
+      properties:
+        articleCount:
+          type: number
+          format: articleCount
+          description: 总共文章数量
+        articleCountOfLang:
+          type: object
+          description: 动态键值对，键是语言代码，值是文章数量
+          additionalProperties:
+            type: number
+        articleCountOfLangAndTag:
+          type: object
+          description: 动态键值对，键是tag名字，值是该语言下该标签的文章数量
+          additionalProperties:
+            type: number
+
+        
