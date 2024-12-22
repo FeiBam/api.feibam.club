@@ -65,6 +65,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ArticleDTO'
+    post:
+      summary: 创建文章
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleData'
+      responses:
+        '200':
+          description: 成功创建文章
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleDTO'
+      
+
+
   /article/info:
     get:
       summary: 获取文章统计信息
@@ -77,7 +95,7 @@ paths:
             type: string
       responses:
         '200':
-          description: 成功获取文章
+          description: 成功创建文章
           content:
             application/json:
               schema:
@@ -151,5 +169,36 @@ components:
           description: 动态键值对，键是tag名字，值是该语言下该标签的文章数量
           additionalProperties:
             type: number
-
+    ArticleData:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 文章 ID
+        title:
+          type: string
+          description: 文章标题
+        introduction:
+          type: string
+          description: 文章简介
+        createAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        subject:
+          type: string
+          description: 文章主题
+        lang:
+          type: integer
+          description: 语言代码
+        tags:
+          type: array
+          description: 文章标签列表
+          items:
+            type: string
+        links:
+          type: array
+          description: 文章相关链接
+          items:
+            type: string
         
