@@ -1,0 +1,5 @@
+{
+    "sql_storage_path" : "./server.db",
+    "log_storage_path" : "./logs",
+    "port":8080
+}
