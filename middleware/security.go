@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"api-feibam-club/utils"
 	"fmt"
 	"time"
 
@@ -34,8 +35,14 @@ func SecurityHeaders(ctx *gin.Context) {
 	ctx.Next()
 }
 
-func IsLogin(ctx *gin.Context) {
-	ctx.Next()
+func IsLogin(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" { // 假设 isValidToken 检查 token 合法性
+		c.JSON(401, utils.JsonResponse("ok", 401, "", "Unauthorized", nil))
+		c.Abort() // 中断请求链，后续的中间件或控制器不会执行
+		return
+	}
+	c.Next()
 }
 
 func XResponseTime(ctx *gin.Context) {

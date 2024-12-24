@@ -38,6 +38,10 @@ func runServer() func(cmd *cobra.Command, args []string) {
 
 		r.TrustedPlatform = gin.PlatformCloudflare
 
+		r.Use(gin.Logger())
+
+		r.Use(gin.Recovery())
+
 		r.Use(middleware.XResponseTime)
 
 		r.Use(middleware.SecurityHeaders)
