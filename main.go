@@ -8,13 +8,42 @@ import (
 	"api-feibam-club/routes"
 	"api-feibam-club/utils"
 	"fmt"
+	"log"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"gorm.io/gorm/logger"
 )
+
+var (
+	tokenStore *models.TokenStore
+	once       sync.Once
+)
+
+func initTokenStore() {
+	tokenStore = &models.TokenStore{}
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			tokenStore.Clean()
+		}
+	}()
+}
+
+func getTokenStore() *models.TokenStore {
+	once.Do(initTokenStore) // 确保 tokenStore 只初始化一次
+	return tokenStore
+}
+
+func addTokenStore(ctx *gin.Context) {
+	ctx.Set("token_store", getTokenStore())
+	ctx.Next()
+}
 
 func addDB(ctx *gin.Context) {
 	db, err := db.GetDB(logger.Silent)
@@ -48,6 +77,8 @@ func runServer() func(cmd *cobra.Command, args []string) {
 
 		r.Use(addDB)
 
+		r.Use(addTokenStore)
+
 		r.Use(cors.New(cors.Config{
 			AllowOrigins:     []string{"*"}, // 必须明确指定来源
 			AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -63,6 +94,7 @@ func runServer() func(cmd *cobra.Command, args []string) {
 
 		utils.RegisterRoutes("/article", defalut_route, routes.ArticleRoutes)
 
+		utils.RegisterRoutes("/admin", defalut_route, routes.AdminRoutes)
 		if err := r.Run(port); err != nil {
 			panic(fmt.Sprintf("failed to start server: %v", err))
 		}
@@ -84,6 +116,10 @@ func migrateModeltoDatabases() func(cmd *cobra.Command, args []string) {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 	var rootCmd = &cobra.Command{}
 
 	var runCmd = &cobra.Command{

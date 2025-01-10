@@ -35,14 +35,59 @@ func SecurityHeaders(ctx *gin.Context) {
 	ctx.Next()
 }
 
-func IsLogin(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	if token == "" { // 假设 isValidToken 检查 token 合法性
-		c.JSON(401, utils.JsonResponse("ok", 401, "", "Unauthorized", nil))
-		c.Abort() // 中断请求链，后续的中间件或控制器不会执行
+func IsLogin(ctx *gin.Context) {
+	// 获取 Authorization 头
+	authHeader := ctx.GetHeader("Authorization")
+	if authHeader == "" {
+		ctx.JSON(401, gin.H{"error": "Authorization header required"})
+		ctx.Abort()
 		return
 	}
-	c.Next()
+
+	// 检查 Bearer 前缀
+	const prefix = "Bearer "
+	if len(authHeader) <= len(prefix) || authHeader[:len(prefix)] != prefix {
+		ctx.JSON(401, gin.H{"error": "Invalid authorization header format"})
+		ctx.Abort()
+		return
+	}
+
+	// 提取 token
+	tokenString := authHeader[len(prefix):]
+
+	// 验证 token
+	mapClaims, err := utils.ValidateJWT(tokenString)
+	if err != nil {
+		ctx.JSON(401, gin.H{"error": "Invalid token"})
+		ctx.Abort()
+		return
+	}
+
+	// 获取 user_name 字段
+	userName, ok := mapClaims["user_name"].(string)
+	if !ok {
+		ctx.JSON(401, gin.H{"error": "user_name not found in token"})
+		ctx.Abort()
+		return
+	}
+
+	// 从 tokenStore 中检查是否存在
+	tokenStore := utils.GetTokenStoreFromContext(ctx)
+	tokenInfo, exists := tokenStore.Get(userName)
+	if !exists {
+		ctx.JSON(401, gin.H{"error": "Token not found!"})
+		ctx.Abort()
+		return
+	}
+	if tokenInfo.Token != tokenString {
+		ctx.JSON(401, gin.H{"error": "Invalid token"})
+		ctx.Abort()
+		return
+	}
+
+	// 将解析后的 claims 设置到上下文中，供后续处理使用
+	ctx.Set("claims", mapClaims)
+	ctx.Next()
 }
 
 func XResponseTime(ctx *gin.Context) {
